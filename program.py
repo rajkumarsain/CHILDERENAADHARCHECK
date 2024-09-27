@@ -73,21 +73,27 @@ try:
     df = pd.read_excel(excel_path)
 
     for index, row in df.iterrows():
-        mobile_number = str(row['MOBILE_NO'])  # Assuming 'MOBILE_NO' is the column name in your Excel
+    # Check if the mobile number is NaN (empty) before converting to string
+        if pd.isna(row['MOBILE_NO']):
+            print(f"Skipping blank mobile number at row {index}")
+            continue  # Skip this iteration if the mobile number is blank
+        else:
+            mobile_number = str(row['MOBILE_NO']).strip()  # Convert to string and strip any whitespace
 
-        # Step 7: Enter the mobile number into the input field
-        mobile_input = WebDriverWait(driver, 20).until(
-            EC.element_to_be_clickable((By.ID, 'mobileNo'))
-        )
-        mobile_input.clear()
-        mobile_input.send_keys(mobile_number)
-        print(f"Entered mobile number: {mobile_number}")
+            # Step 7: Enter the mobile number into the input field
+            mobile_input = WebDriverWait(driver, 20).until(
+                EC.element_to_be_clickable((By.ID, 'mobileNo'))
+            )
+            mobile_input.clear()
+            mobile_input.send_keys(mobile_number)
+            print(f"Entered mobile number: {mobile_number}")
 
-        # Step 8: Click on the "Search" button
-        search_button = driver.find_element(By.ID, 'btn')
-        search_button.click()
-        print("Clicked the 'Search' button")
-        time.sleep(5)  # Adjust based on the search results loading time
+            # Step 8: Click on the "Search" button
+            search_button = driver.find_element(By.ID, 'btn')
+            search_button.click()
+            print("Clicked the 'Search' button")
+            time.sleep(5)  # Adjust based on the search results loading time
+
 
 except Exception as e:
     print(f"Error: {e}")
