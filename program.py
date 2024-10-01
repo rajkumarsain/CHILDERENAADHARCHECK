@@ -12,11 +12,11 @@ from openpyxl import load_workbook
 username = 'rajkumarsain.doit'
 password = 'Network@1984'
 
-# Take Excel file path as input
-excel_path = input("Please enter the path of the Excel file: ")
-
 # Set up Chrome WebDriver using Service
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
+
+# Take Excel file path as input
+excel_path = input("Please enter the path of the Excel file: ")
 
 # Step 1: Open the login page
 driver.get("https://sso.rajasthan.gov.in/signin")
