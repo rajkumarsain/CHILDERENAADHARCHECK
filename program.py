@@ -99,19 +99,7 @@ try:
             search_button = driver.find_element(By.ID, 'btn')
             search_button.click()
 
-            # First, check if "No Records Found" message is displayed
-            try:
-                not_found_message = WebDriverWait(driver, 5).until(
-                    EC.presence_of_element_located((By.XPATH, "//div[contains(text(), 'No Records Found')]"))
-                )
-                if not_found_message:
-                    ws.cell(row=batch_start + index + 2, column=df.columns.get_loc('AADHAR') + 1).value = "No Records Found"
-                    print(f"Mobile number {mobile_number}: No records found, skipping.")
-                    continue  # Skip to the next mobile number
-            except Exception:
-                pass  # Continue if "No Records Found" is not present
-
-            # Only wait for the table if "No Records Found" is not detected
+            # Wait for the search results
             try:
                 WebDriverWait(driver, 20).until(
                     EC.presence_of_element_located((By.XPATH, "//*[@id='showdata']/table"))
@@ -119,6 +107,16 @@ try:
             except Exception:
                 print(f"Error while searching for mobile number {mobile_number}, skipping.")
                 continue
+
+            # Check if "No Records Found" message is displayed in a div
+            try:
+                not_found_message = driver.find_element(By.XPATH, "//div[contains(text(), 'No Records Found')]")
+                if not_found_message:
+                    ws.cell(row=batch_start + index + 2, column=df.columns.get_loc('AADHAR') + 1).value = "No Records Found"
+                    print(f"Mobile number {mobile_number}: No records found, skipping.")
+                    continue  # Skip to the next mobile number
+            except Exception:
+                pass  # Continue if "No Records Found" is not present
 
             # Match name from webpage
             try:
