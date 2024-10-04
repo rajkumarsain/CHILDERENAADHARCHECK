@@ -81,69 +81,81 @@ try:
         batch_end = min(batch_start + batch_size, total_records)
         batch_df = df.iloc[batch_start:batch_end]
 
-        for index, row in batch_df.iterrows():
-            mobile_number = str(row['MOBILE_NO']).strip() if pd.notna(row['MOBILE_NO']) else None
-            name_from_excel = row['NAME'].strip() if pd.notna(row['NAME']) else None
+        for row_index, (index, row) in enumerate(batch_df.iterrows(), start=batch_start + 2):
+            # Check if the AADHAR column is empty
+            aadhar_number = str(row['AADHAR']).strip() if pd.notna(row['AADHAR']) else None
+             # Only proceed if AADHAR is empty
+            if not aadhar_number:
+                # Read the mobile number only if AADHAR is empty
+                mobile_number = str(row['MOBILE_NO']).strip() if pd.notna(row['MOBILE_NO']) else None
+                name_from_excel = row['NAME'].strip() if pd.notna(row['NAME']) else None
+                
+                # Use row_index for Excel row calculation directly
+                excel_row = row_index  # Adjust for header row (starts from 2)
 
-            if not mobile_number or not name_from_excel:
-                ws.cell(row=batch_start + index + 2, column=df.columns.get_loc('AADHAR') + 1).value = "Missing data"
-                continue
+                # Check for missing data
+                if not mobile_number or not name_from_excel:
+                    ws.cell(row=excel_row, column=df.columns.get_loc('AADHAR') + 1).value = "Missing data"
+                    continue
 
-            # Step 7: Enter mobile number and search
-            mobile_input = WebDriverWait(driver, 20).until(
-                EC.element_to_be_clickable((By.ID, 'mobileNo'))
-            )
-            mobile_input.clear()
-            mobile_input.send_keys(mobile_number)
-
-            search_button = driver.find_element(By.ID, 'btn')
-            search_button.click()
-
-            # Wait for the search results
-            try:
-                WebDriverWait(driver, 20).until(
-                    EC.presence_of_element_located((By.XPATH, "//*[@id='showdata']/table"))
+                # Step 7: Enter mobile number and search
+                mobile_input = WebDriverWait(driver, 20).until(
+                    EC.element_to_be_clickable((By.ID, 'mobileNo'))
                 )
-            except Exception:
-                print(f"Error while searching for mobile number {mobile_number}, skipping.")
-                continue
+                mobile_input.clear()
+                mobile_input.send_keys(mobile_number)
 
-            # Check if "No Records Found" message is displayed in a div
-            try:
-                not_found_message = driver.find_element(By.XPATH, "//div[contains(text(), 'No Records Found')]")
-                if not_found_message:
-                    ws.cell(row=batch_start + index + 2, column=df.columns.get_loc('AADHAR') + 1).value = "No Records Found"
-                    print(f"Mobile number {mobile_number}: No records found, skipping.")
-                    continue  # Skip to the next mobile number
-            except Exception:
-                pass  # Continue if "No Records Found" is not present
+                search_button = driver.find_element(By.ID, 'btn')
+                search_button.click()
 
-            # Match name from webpage
-            try:
-                rows_xpath = "//*[@id='showdata']/table/tbody/tr"
-                rows = WebDriverWait(driver, 20).until(
-                    EC.presence_of_all_elements_located((By.XPATH, rows_xpath))
-                )
+                # Wait for the search results
+                try:
+                    WebDriverWait(driver, 20).until(
+                        EC.presence_of_element_located((By.XPATH, "//*[@id='showdata']/table"))
+                    )
+                except Exception:
+                    error_message = f"No Records Found {mobile_number}, skipping."
+                    print(error_message)
+                    # Write the error message in the AADHAR column of the corresponding row
+                    ws.cell(row=excel_row, column=df.columns.get_loc('AADHAR') + 1).value = "No records Found"
+                    continue
+                # Check for "No Records Found"
+                try:
+                    not_found_message = driver.find_element(By.XPATH, "//div[contains(text(), 'No Records Found')]")
+                    if not_found_message:
+                        ws.cell(row=excel_row, column=df.columns.get_loc('AADHAR') + 1).value = "No Records Found"
+                        print(f"Mobile number {mobile_number}: No records found, skipping.")
+                        continue
+                except Exception:
+                    pass  # Continue if "No Records Found" is not present
 
-                match_found = False
-                for row_index, table_row in enumerate(rows, start=1):
-                    columns = table_row.find_elements(By.TAG_NAME, 'td')
+                # Match name from webpage
+                try:
+                    rows_xpath = "//*[@id='showdata']/table/tbody/tr"
+                    rows = WebDriverWait(driver, 20).until(
+                        EC.presence_of_all_elements_located((By.XPATH, rows_xpath))
+                    )
 
-                    if len(columns) >= 4:
-                        name_on_web = columns[3].text.strip()
-                        aadhar_id = columns[2].text.strip()
+                    match_found = False
+                    for table_row in rows:
+                        columns = table_row.find_elements(By.TAG_NAME, 'td')
 
-                        if name_from_excel.lower() == name_on_web.lower():
-                            ws.cell(row=batch_start + index + 2, column=df.columns.get_loc('AADHAR') + 1).value = aadhar_id
-                            match_found = True
-                            break
+                        if len(columns) >= 4:
+                            name_on_web = columns[3].text.strip()
+                            aadhar_id = columns[2].text.strip() if columns[2].text.strip() else "aadhar not available"
 
-                if not match_found:
-                    ws.cell(row=batch_start + index + 2, column=df.columns.get_loc('AADHAR') + 1).value = "No match found"
+                            if name_from_excel.lower() == name_on_web.lower():
+                                ws.cell(row=excel_row, column=df.columns.get_loc('AADHAR') + 1).value = aadhar_id
+                                ws.cell(row=excel_row, column=df.columns.get_loc('WebName') + 1).value = name_on_web
+                                match_found = True
+                                break
 
-            except Exception as e:
-                ws.cell(row=batch_start + index + 2, column=df.columns.get_loc('AADHAR') + 1).value = "Error during match"
-                print(f"Error processing record {index + 1}: {e}")
+                    if not match_found:
+                        ws.cell(row=excel_row, column=df.columns.get_loc('AADHAR') + 1).value = "No match found"
+
+                except Exception as e:
+                    ws.cell(row=excel_row, column=df.columns.get_loc('AADHAR') + 1).value = "Error during match"
+                    print(f"Error processing record {index + 1}: {e}")
 
         # Save the Excel file after each batch
         wb.save(excel_path)
