@@ -10,8 +10,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from openpyxl import load_workbook
 
 # Load credentials 
-username = 'rajkumarsain.doit'
-password = 'Network@1984'
+username = 'CHARUAGARWAL.DOIT'
+password = 'Sad@123456789'
 
 # Get current directory and ensure Excel file is in the same directory as Python script
 current_dir = os.getcwd()
