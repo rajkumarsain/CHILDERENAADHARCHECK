@@ -24,7 +24,10 @@ if not os.path.isfile(excel_path):
     exit(1)
 
 # Set up Chrome WebDriver using Service
-driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
+""
+chrome_driver_path = "G:/RAJ OFFICE PC/PROJECTS/PYTHON/chromedriver/chromedriver.exe"
+driver = webdriver.Chrome(service=Service(chrome_driver_path))
+#driver = webdriver.Chrome(service=Service(ChromeDriverManager(driver_version="129.0.6668.89").install()))
 
 # Step 1: Open the login page
 driver.get("https://sso.rajasthan.gov.in/signin")
